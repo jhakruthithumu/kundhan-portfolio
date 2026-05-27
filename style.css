@@ -368,16 +368,22 @@ a {
 .nav-menu {
     display: flex;
     align-items: center;
-    gap: 40px;
+    gap: 32px;
     list-style: none;
+    white-space: nowrap;
+    flex-wrap: nowrap;
 }
 
 .nav-link {
-    font-size: 0.95rem;
-    font-weight: 400;
+    font-size: 0.8rem;
+    font-weight: 600;
     color: var(--text-secondary);
     position: relative;
     padding: 6px 0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 0.3s ease;
 }
 
 .nav-link:hover {
@@ -406,6 +412,17 @@ a {
     display: flex;
     align-items: center;
     gap: 20px;
+    white-space: nowrap;
+}
+
+.nav-actions .btn-primary {
+    padding: 10px 22px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(245, 197, 66, 0.15);
 }
 
 .social-nav-link {
@@ -1163,9 +1180,107 @@ a {
     z-index: 5;
 }
 
-.cta-buttons .btn {
-    padding: 18px 40px;
-    font-size: 1.02rem;
+/* --- GLOBAL ACCOUNTING & ADVISORY --- */
+.global-advisory {
+    padding: 140px 0;
+    position: relative;
+    border-top: 1px solid var(--border-color);
+    background-color: rgba(10, 10, 10, 0.4);
+}
+
+.split-layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1.3fr;
+    gap: 80px;
+    align-items: center;
+}
+
+.global-countries {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+}
+
+.country-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.country-pill:hover {
+    border-color: rgba(245, 197, 66, 0.3);
+    background-color: rgba(245, 197, 66, 0.03);
+    color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.country-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+.global-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.global-card {
+    background-color: rgba(18, 18, 18, 0.35);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 28px;
+    transition: all var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.global-card:hover {
+    border-color: rgba(245, 197, 66, 0.25);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(245, 197, 66, 0.02);
+}
+
+.global-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.global-code {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+.global-card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.global-card-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    font-weight: 300;
 }
 
 /* --- MINIMALIST DARK FOOTER --- */

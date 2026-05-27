@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- 7. CARDS SPOTLIGHT CURSOR GLOWS (Binds to Services, AI, and Staggered Timelines) ---
-    const interactiveCards = document.querySelectorAll('.service-card, .ai-card, .timeline-item');
+    const interactiveCards = document.querySelectorAll('.service-card, .ai-card, .timeline-item, .global-card');
     
     interactiveCards.forEach(card => {
         card.addEventListener('mousemove', (e) => {
