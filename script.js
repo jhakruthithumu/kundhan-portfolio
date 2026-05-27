@@ -262,7 +262,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('Consultation Request Submitting:', formData);
 
-            fetch('/api/consultation', {
+            // Route local testing requests (localhost/127.0.0.1) directly to production API to prevent local 404s
+            const isLocal = window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' || 
+                            window.location.protocol === 'file:';
+            const apiEndpoint = isLocal 
+                ? 'https://kundhan-cfo.vercel.app/api/consultation' 
+                : '/api/consultation';
+            
+            console.log(`Submitting consultation request to: ${apiEndpoint}`);
+
+            fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
