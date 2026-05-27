@@ -1,11 +1,10 @@
 /**
  * Vercel Serverless Function: /api/consultation
- * Handles consultation form submissions and sends high-fidelity email notifications to the admin.
- * Zero-dependency (uses native fetch) for maximum speed and zero build-time failures.
+ * Processes form submissions, sends notification to the admin, and sends confirmation to the client.
+ * Features graceful try-catch wraps for client emails to prevent sandbox restrictions from blocking submissions.
  */
 
 export default async function handler(req, res) {
-    // 1. Enforce POST requests
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
@@ -14,20 +13,18 @@ export default async function handler(req, res) {
     try {
         const { name, email, company, stage, service, goals } = req.body;
 
-        // 2. Validate input parameters
         if (!name || !email || !company || !stage || !service || !goals) {
             return res.status(400).json({ success: false, error: 'Missing required form fields.' });
         }
 
-        // 3. Retrieve environment variables (with fallback options)
         const resendApiKey = process.env.RESEND_API_KEY;
         const receiverEmail = process.env.ADMIN_RECEIVER_EMAIL || 'ca.kundhan@gmail.com';
         const senderEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
 
         console.log(`Processing submission for: ${name} (${company})`);
 
-        // 4. Construct high-fidelity HTML email body
-        const htmlContent = `
+        // 1. Construct HTML for Admin Notification
+        const adminHtmlContent = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -80,28 +77,57 @@ export default async function handler(req, res) {
                         <div class="field-label">Business & Goals Description</div>
                         <div class="field-value" style="white-space: pre-wrap;">${goals}</div>
                     </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        // 2. Construct HTML for Client Confirmation
+        const clientHtmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1A1A1A; line-height: 1.6; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EAEAEA; border-radius: 8px; }
+                    .header { border-bottom: 2px solid #F5C542; padding-bottom: 16px; margin-bottom: 24px; }
+                    .title { font-size: 20px; font-weight: 700; color: #0A0A0A; margin: 0; }
+                    .subtitle { font-size: 14px; color: #666666; margin-top: 4px; }
+                    .text { font-size: 15px; color: #333333; margin-bottom: 16px; }
+                    .footer { font-size: 12px; color: #888888; text-align: center; border-top: 1px solid #EAEAEA; padding-top: 16px; margin-top: 32px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1 class="title">Consultation Request Received</h1>
+                        <p class="subtitle">Kundhan and Associates - Global Accounting & Advisory</p>
+                    </div>
+                    
+                    <p class="text">Dear ${name},</p>
+                    <p class="text">Thank you for reaching out to Kundhan & Associates. We have successfully received your request for <strong>${service.replace('-', ' ')}</strong>.</p>
+                    <p class="text">Our principal strategic advisor is reviewing your company stage and business goals. We will connect with you via email within 24 hours to schedule our 30-minute introductory call.</p>
+                    
+                    <p class="text">Best regards,<br><strong>Kundhan & Associates Team</strong></p>
                     
                     <div class="footer">
-                        Sent securely from Kundhan & Associates Serverless Pipeline.
+                        This is an automated confirmation of your request.
                     </div>
                 </div>
             </body>
             </html>
         `;
 
-        // 5. If Resend API Key is missing, log & simulate success in dev
         if (!resendApiKey) {
             console.warn('WARNING: RESEND_API_KEY environment variable is not defined.');
-            console.log('SIMULATING SUCCESSFUL EMAIL DISPATCH IN DEVELOPMENT MODE:');
-            console.log(htmlContent);
-            return res.status(200).json({ 
-                success: true, 
-                message: 'Simulation successful. Please add RESEND_API_KEY environment variable in Vercel to send real emails.' 
-            });
+            console.log('SIMULATING DISPATCH IN DEV:');
+            console.log(adminHtmlContent);
+            return res.status(200).json({ success: true, message: 'Simulation successful.' });
         }
 
-        // 6. Make request to Resend API
-        const response = await fetch('https://api.resend.com/emails', {
+        // 3. Dispatch Email to Admin (Recipient: ca.kundhan@gmail.com)
+        const adminResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${resendApiKey}`,
@@ -112,19 +138,47 @@ export default async function handler(req, res) {
                 to: [receiverEmail],
                 reply_to: email,
                 subject: `New Consultation Request: ${name} (${company})`,
-                html: htmlContent
+                html: adminHtmlContent
             })
         });
 
-        const data = await response.json();
+        const adminData = await adminResponse.json();
 
-        if (!response.ok) {
-            console.error('Resend API returned error:', data);
-            return res.status(response.status).json({ success: false, error: data.message || 'Resend failed to send email.' });
+        if (!adminResponse.ok) {
+            console.error('Resend Admin Send Error:', adminData);
+            return res.status(adminResponse.status).json({ success: false, error: adminData.message || 'Resend failed to notify admin.' });
         }
 
-        console.log(`Email successfully dispatched via Resend. ID: ${data.id}`);
-        return res.status(200).json({ success: true, message: 'Consultation request sent successfully.', id: data.id });
+        console.log(`Admin email sent. ID: ${adminData.id}`);
+
+        // 4. Dispatch Email to Client (Gracefully wrapped to bypass sandbox rules)
+        try {
+            console.log(`Attempting to dispatch client confirmation to: ${email}`);
+            const clientResponse = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    from: `Kundhan & Associates <${senderEmail}>`,
+                    to: [email],
+                    subject: `Request Received: Kundhan & Associates`,
+                    html: clientHtmlContent
+                })
+            });
+
+            const clientData = await clientResponse.json();
+            if (clientResponse.ok) {
+                console.log(`Client confirmation email sent successfully. ID: ${clientData.id}`);
+            } else {
+                console.warn('Client confirmation rejected by Resend (This is normal in sandbox/free trial):', clientData.message);
+            }
+        } catch (clientErr) {
+            console.warn('Failed to dispatch client confirmation (non-fatal):', clientErr);
+        }
+
+        return res.status(200).json({ success: true, message: 'Consultation request processed successfully.', id: adminData.id });
 
     } catch (error) {
         console.error('Serverless function exception caught:', error);
