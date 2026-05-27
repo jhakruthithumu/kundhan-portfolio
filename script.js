@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- 7. CARDS SPOTLIGHT CURSOR GLOWS (Binds to Services, AI, and Staggered Timelines) ---
-    const interactiveCards = document.querySelectorAll('.service-card, .ai-card, .timeline-item, .global-card');
+    const interactiveCards = document.querySelectorAll('.service-card, .ai-card, .timeline-item, .global-card, .itr-card');
     
     interactiveCards.forEach(card => {
         card.addEventListener('mousemove', (e) => {
@@ -241,6 +241,16 @@ document.addEventListener('DOMContentLoaded', () => {
         bookingForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
+            const submitBtn = bookingForm.querySelector('.form-submit');
+            const originalBtnHtml = submitBtn.innerHTML;
+            
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg style="animation: spin 1s linear infinite; margin-right: 8px; display: inline-block; vertical-align: middle;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Sending Request...
+            `;
+            
             const formData = {
                 name: document.getElementById('client-name').value,
                 email: document.getElementById('client-email').value,
@@ -250,10 +260,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 goals: document.getElementById('business-goals').value
             };
             
-            console.log('Consultation Request Submitted:', formData);
+            console.log('Consultation Request Submitting:', formData);
 
-            modalFormView.style.display = 'none';
-            modalSuccessView.classList.add('active');
+            fetch('/api/consultation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(async (response) => {
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    modalFormView.style.display = 'none';
+                    modalSuccessView.classList.add('active');
+                } else {
+                    console.error('Submission failed:', data.error);
+                    alert(`Error submitting request: ${data.error || 'Please try again.'}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                alert('Connection error. Please try again or email us directly.');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            });
         });
     }
 
