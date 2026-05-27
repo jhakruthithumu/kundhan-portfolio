@@ -1025,18 +1025,26 @@ a {
     margin-right: auto;
     font-weight: 300;
 }
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
+    gap: 0;
+    width: 100%;
+    margin-top: 80px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 60px 0;
 }
 
 .stat-box {
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    justify-content: center;
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 20px 10px;
+    height: 100%;
 }
 
 .stat-box:last-child {
@@ -1044,23 +1052,36 @@ a {
 }
 
 .stat-num {
-    font-size: 4.5rem;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-size: 3.85rem;
+    font-weight: 600;
     font-family: var(--font-heading);
-    letter-spacing: -0.02em;
-    margin-bottom: 14px;
+    letter-spacing: -0.015em;
+    margin-bottom: 16px;
+    line-height: 1.1;
+    display: block;
     background: linear-gradient(135deg, #FFFFFF 0%, #F5C542 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    white-space: nowrap;
 }
 
 .stat-lbl {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+}
+
+/* Strict Single-Line Headers & Service Titles */
+.service-card .service-title,
+.ai-card .ai-card-title,
+.investment-card h3,
+.global-card-title {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 /* --- ABOUT FOUNDER: TEXT-ONLY EDITORIAL ASYMMETRICAL --- */
@@ -1700,13 +1721,19 @@ a {
     
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 36px;
+        gap: 0;
+        row-gap: 40px;
+        padding: 40px 0;
     }
     
     .stat-box {
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .stat-box:nth-child(2n) {
         border-right: none;
-        padding-bottom: 28px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     
     .stat-box:nth-child(3), .stat-box:nth-child(4) {
