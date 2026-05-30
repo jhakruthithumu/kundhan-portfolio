@@ -1549,6 +1549,11 @@ a {
     box-shadow: 0 0 0 4px rgba(245, 197, 66, 0.08);
 }
 
+.form-select option {
+    background-color: #0E1118;
+    color: var(--text-primary);
+}
+
 .form-row {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
