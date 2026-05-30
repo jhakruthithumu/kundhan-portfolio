@@ -1,7 +1,7 @@
 /**
  * Vercel Serverless Function: /api/consultation
  * Processes form submissions, sends notification to the admin, and sends confirmation to the client.
- * Features graceful try-catch wraps for client emails to prevent sandbox restrictions from blocking submissions.
+ * Features CORS support, rich schema validations, and sandbox protection wrappers.
  */
 
 export default async function handler(req, res) {
@@ -21,9 +21,10 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { name, email, company, stage, service, goals } = req.body;
+        const { name, email, phone, company, stage, service, goals, date, time, notes } = req.body;
 
-        if (!name || !email || !company || !stage || !service || !goals) {
+        // Notes is optional; all other fields are strictly mandatory
+        if (!name || !email || !phone || !company || !stage || !service || !goals || !date || !time) {
             return res.status(400).json({ success: false, error: 'Missing required form fields.' });
         }
 
@@ -31,7 +32,28 @@ export default async function handler(req, res) {
         const receiverEmail = process.env.ADMIN_RECEIVER_EMAIL || 'ca.kundhan@gmail.com';
         const senderEmail = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
 
-        console.log(`Processing submission for: ${name} (${company})`);
+        console.log(`Processing structured submission for: ${name} (${company}) - Service: ${service}`);
+
+        // Service Key to Premium Label Dictionary
+        const serviceLabels = {
+            'gst-filings': 'GST Filings & Advisory',
+            'ipo-services': 'IPO Readiness & Services',
+            'company-compliances': 'Company MCA Compliances',
+            'audit-assurance': 'Audit & Internal Controls',
+            'mis-reporting': 'MIS Reporting & Analytics',
+            'startup-msme': 'Startup & MSME Advisory',
+            'virtual-cfo': 'Virtual CFO Services',
+            'investment-advisory': 'Investment Advisory',
+            'business-planning': 'Business Financial Planning',
+            'itr-1': 'ITR-1 (Sahaj - Salaried)',
+            'itr-2': 'ITR-2 (Capital Gains & Foreign Assets)',
+            'itr-3': 'ITR-3 (Business & Professional)',
+            'itr-4': 'ITR-4 (Sugam - Presumptive)',
+            'itr-5': 'ITR-5 (Partnerships & LLPs)',
+            'itr-6': 'ITR-6 (Corporate Businesses)',
+            'itr-7': 'ITR-7 (Trusts & Institutions)'
+        };
+        const readableService = serviceLabels[service] || service.replace('-', ' ');
 
         // 1. Construct HTML for Admin Notification
         const adminHtmlContent = `
@@ -40,52 +62,92 @@ export default async function handler(req, res) {
             <head>
                 <meta charset="utf-8">
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1A1A1A; line-height: 1.6; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EAEAEA; border-radius: 8px; }
-                    .header { border-bottom: 2px solid #F5C542; padding-bottom: 16px; margin-bottom: 24px; }
-                    .title { font-size: 20px; font-weight: 700; color: #0A0A0A; margin: 0; }
-                    .subtitle { font-size: 14px; color: #666666; margin-top: 4px; }
-                    .field-group { margin-bottom: 20px; }
-                    .field-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #F5C542; margin-bottom: 4px; }
-                    .field-value { font-size: 15px; color: #111111; background-color: #F9F9F9; padding: 12px; border-radius: 4px; border-left: 3px solid #E0E0E0; }
-                    .footer { font-size: 12px; color: #888888; text-align: center; border-top: 1px solid #EAEAEA; padding-top: 16px; margin-top: 32px; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111111; line-height: 1.6; background-color: #F8F9FA; padding: 20px; }
+                    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #EAEAEA; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; }
+                    .header { background: #0E1118; border-bottom: 3px solid #F5C542; padding: 32px 24px; text-align: center; }
+                    .title { font-size: 22px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: 0.05em; text-transform: uppercase; }
+                    .subtitle { font-size: 14px; color: #F5C542; margin-top: 6px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+                    .section { padding: 24px; border-bottom: 1px solid #EAEAEA; }
+                    .section-title { font-size: 13px; font-weight: 700; color: #F5C542; background: #0E1118; display: inline-block; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                    .field-group { margin-bottom: 12px; }
+                    .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #666666; margin-bottom: 2px; }
+                    .field-value { font-size: 14px; color: #111111; font-weight: 500; }
+                    .value-box { font-size: 14px; color: #111111; background-color: #F9F9F9; padding: 16px; border-radius: 6px; border-left: 4px solid #F5C542; white-space: pre-wrap; margin-top: 6px; }
+                    .slot-highlight { background: #FFFDF5; border: 1px dashed #F5C542; border-radius: 6px; padding: 16px; display: flex; justify-content: space-around; text-align: center; }
+                    .slot-item { flex: 1; }
+                    .slot-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #888888; margin-bottom: 2px; }
+                    .slot-value { font-size: 15px; font-weight: 700; color: #0E1118; }
+                    .footer { font-size: 12px; color: #888888; text-align: center; padding: 20px; background: #F8F9FA; border-top: 1px solid #EAEAEA; }
                 </style>
             </head>
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1 class="title">New Advisory Consultation Request</h1>
-                        <p class="subtitle">Kundhan and Associates - Global Accounting & Advisory</p>
+                        <h1 class="title">New Advisory Booking</h1>
+                        <p class="subtitle">Kundhan & Associates • Global Advisory</p>
                     </div>
                     
-                    <div class="field-group">
-                        <div class="field-label">Client Name</div>
-                        <div class="field-value"><strong>${name}</strong></div>
+                    <!-- Section 1: Lead Details -->
+                    <div class="section">
+                        <div class="section-title">Client Profile</div>
+                        <div class="grid">
+                            <div class="field-group">
+                                <div class="field-label">Full Name</div>
+                                <div class="field-value"><strong>${name}</strong></div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">Company Name</div>
+                                <div class="field-value">${company}</div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">Business Stage</div>
+                                <div class="field-value" style="text-transform: capitalize;">${stage.replace('-', ' ')}</div>
+                            </div>
+                            <div class="field-group">
+                                <div class="field-label">Phone Number</div>
+                                <div class="field-value"><a href="tel:${phone}">${phone}</a></div>
+                            </div>
+                        </div>
+                        <div class="field-group" style="margin-top: 12px; margin-bottom: 0;">
+                            <div class="field-label">Business Email</div>
+                            <div class="field-value"><a href="mailto:${email}">${email}</a></div>
+                        </div>
                     </div>
                     
-                    <div class="field-group">
-                        <div class="field-label">Business Email</div>
-                        <div class="field-value"><a href="mailto:${email}">${email}</a></div>
+                    <!-- Section 2: Consultation Booking Details -->
+                    <div class="section">
+                        <div class="section-title">Requested Service & Slot</div>
+                        <div class="field-group" style="margin-bottom: 16px;">
+                            <div class="field-label">Advisory Service</div>
+                            <div class="field-value" style="font-size: 16px; font-weight: 700; color: #0E1118;">${readableService}</div>
+                        </div>
+                        <div class="slot-highlight">
+                            <div class="slot-item" style="border-right: 1px solid #EAEAEA;">
+                                <div class="slot-label">Preferred Date</div>
+                                <div class="slot-value">${date}</div>
+                            </div>
+                            <div class="slot-item">
+                                <div class="slot-label">Preferred Time</div>
+                                <div class="slot-value" style="text-transform: capitalize;">${time}</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="field-group">
-                        <div class="field-label">Company Name</div>
-                        <div class="field-value">${company}</div>
+                    <!-- Section 3: Context Requirements -->
+                    <div class="section">
+                        <div class="section-title">Requirement Context</div>
+                        <div class="field-label">Core Situation / Inquiry</div>
+                        <div class="value-box">${goals}</div>
+                        
+                        ${notes ? `
+                        <div class="field-label" style="margin-top: 16px;">Additional Context & Notes</div>
+                        <div class="value-box" style="border-left-color: #888888; background-color: #FAFAFA;">${notes}</div>
+                        ` : ''}
                     </div>
                     
-                    <div class="field-group">
-                        <div class="field-label">Business Stage</div>
-                        <div class="field-value" style="text-transform: capitalize;">${stage.replace('-', ' ')}</div>
-                    </div>
-                    
-                    <div class="field-group">
-                        <div class="field-label">Primary Advisory Need</div>
-                        <div class="field-value" style="text-transform: capitalize;">${service.replace('-', ' ')}</div>
-                    </div>
-                    
-                    <div class="field-group">
-                        <div class="field-label">Business & Goals Description</div>
-                        <div class="field-value" style="white-space: pre-wrap;">${goals}</div>
+                    <div class="footer">
+                        Sent from Kundhan & Associates Advisory Portal • Hyderabad, India
                     </div>
                 </div>
             </body>
@@ -99,30 +161,43 @@ export default async function handler(req, res) {
             <head>
                 <meta charset="utf-8">
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1A1A1A; line-height: 1.6; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #EAEAEA; border-radius: 8px; }
-                    .header { border-bottom: 2px solid #F5C542; padding-bottom: 16px; margin-bottom: 24px; }
-                    .title { font-size: 20px; font-weight: 700; color: #0A0A0A; margin: 0; }
-                    .subtitle { font-size: 14px; color: #666666; margin-top: 4px; }
-                    .text { font-size: 15px; color: #333333; margin-bottom: 16px; }
-                    .footer { font-size: 12px; color: #888888; text-align: center; border-top: 1px solid #EAEAEA; padding-top: 16px; margin-top: 32px; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1A1A1A; line-height: 1.6; padding: 20px; background-color: #F8F9FA; }
+                    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #EAEAEA; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; }
+                    .header { background: #0E1118; border-bottom: 3px solid #F5C542; padding: 28px 20px; text-align: center; }
+                    .title { font-size: 20px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: 0.05em; text-transform: uppercase; }
+                    .subtitle { font-size: 13px; color: #F5C542; margin-top: 4px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+                    .body-section { padding: 32px 24px; }
+                    .text { font-size: 15px; color: #333333; margin-bottom: 18px; }
+                    .slot-card { background-color: #F9F9F9; border-left: 4px solid #F5C542; border-radius: 4px; padding: 16px; margin: 24px 0; }
+                    .slot-row { margin-bottom: 8px; font-size: 14px; }
+                    .slot-row strong { color: #0E1118; }
+                    .footer { font-size: 12px; color: #888888; text-align: center; padding: 16px; background: #F8F9FA; border-top: 1px solid #EAEAEA; }
                 </style>
             </head>
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1 class="title">Consultation Request Received</h1>
-                        <p class="subtitle">Kundhan and Associates - Global Accounting & Advisory</p>
+                        <h1 class="title">Request Received</h1>
+                        <p class="subtitle">Kundhan & Associates • Global Advisory</p>
                     </div>
                     
-                    <p class="text">Dear ${name},</p>
-                    <p class="text">Thank you for reaching out to Kundhan & Associates. We have successfully received your request for <strong>${service.replace('-', ' ')}</strong>.</p>
-                    <p class="text">Our principal strategic advisor is reviewing your company stage and business goals. We will connect with you via email within 24 hours to schedule our 30-minute introductory call.</p>
-                    
-                    <p class="text">Best regards,<br><strong>Kundhan & Associates Team</strong></p>
+                    <div class="body-section">
+                        <p class="text">Dear ${name},</p>
+                        <p class="text">Thank you for booking a consultation with Kundhan & Associates. We have successfully received your strategic advisory request.</p>
+                        
+                        <div class="slot-card">
+                            <div class="slot-row"><strong>Service Field:</strong> ${readableService}</div>
+                            <div class="slot-row"><strong>Requested Date:</strong> ${date}</div>
+                            <div class="slot-row"><strong>Preferred Slot:</strong> <span style="text-transform: capitalize;">${time}</span></div>
+                        </div>
+                        
+                        <p class="text">Our principal strategic advisor is reviewing your requirement and company profile. We will connect with you via email within 24 hours to schedule our 30-minute introductory call.</p>
+                        
+                        <p class="text" style="margin-top: 32px;">Best regards,<br><strong>Kundhan & Associates Team</strong></p>
+                    </div>
                     
                     <div class="footer">
-                        This is an automated confirmation of your request.
+                        This is an automated confirmation of your strategic advisory request.
                     </div>
                 </div>
             </body>
@@ -147,7 +222,7 @@ export default async function handler(req, res) {
                 from: `Advisory Portal <${senderEmail}>`,
                 to: [receiverEmail],
                 reply_to: email,
-                subject: `New Consultation Request: ${name} (${company})`,
+                subject: `New Structured Booking: ${name} (${company})`,
                 html: adminHtmlContent
             })
         });
@@ -159,7 +234,7 @@ export default async function handler(req, res) {
             return res.status(adminResponse.status).json({ success: false, error: adminData.message || 'Resend failed to notify admin.' });
         }
 
-        console.log(`Admin email sent. ID: ${adminData.id}`);
+        console.log(`Admin lead notification email sent. ID: ${adminData.id}`);
 
         // 4. Dispatch Email to Client (Gracefully wrapped to bypass sandbox rules)
         try {

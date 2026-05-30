@@ -209,9 +209,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const bookingForm = document.getElementById('booking-form');
     const modalSuccessCloseBtn = document.getElementById('modal-success-close-btn');
 
-    const openModal = () => {
+    const openModal = (e) => {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        // Auto-select service in the dropdown if clicked from a service-specific button
+        if (e && e.currentTarget) {
+            const serviceKey = e.currentTarget.getAttribute('data-service');
+            if (serviceKey) {
+                const serviceSelect = document.getElementById('required-service');
+                if (serviceSelect) {
+                    serviceSelect.value = serviceKey;
+                }
+            }
+        }
     };
 
     const closeModal = () => {
@@ -254,10 +265,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = {
                 name: document.getElementById('client-name').value,
                 email: document.getElementById('client-email').value,
+                phone: document.getElementById('client-phone').value,
                 company: document.getElementById('company-name').value,
                 stage: document.getElementById('business-stage').value,
                 service: document.getElementById('required-service').value,
-                goals: document.getElementById('business-goals').value
+                goals: document.getElementById('business-goals').value,
+                date: document.getElementById('preferred-date').value,
+                time: document.getElementById('preferred-time').value,
+                notes: document.getElementById('additional-notes').value
             };
             
             console.log('Consultation Request Submitting:', formData);
