@@ -1586,17 +1586,53 @@ a {
     animation: fade-in 0.6s var(--transition-smooth);
 }
 
-.success-icon-box {
+.success-icon-box-green {
     width: 84px;
     height: 84px;
     border-radius: 50%;
-    background-color: var(--accent-glow);
-    color: var(--accent);
+    background-color: rgba(16, 185, 129, 0.08); /* Emerald transparent glow */
+    color: #10B981; /* Emerald green checkmark */
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 32px;
-    border: 1px solid var(--border-accent);
+    margin-bottom: 28px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.15); /* Green radial aura glow */
+}
+
+.success-advisory-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    width: 100%;
+    max-width: 440px;
+    margin: 28px 0;
+    text-align: left;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-left: 4px solid #10B981; /* Premium green left accent bar */
+}
+
+.success-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.success-card-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+}
+
+.success-card-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
 }
 
 .success-title {
