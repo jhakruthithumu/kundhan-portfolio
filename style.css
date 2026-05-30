@@ -613,12 +613,12 @@ a {
 
 .glass-card {
     background-color: var(--bg-glass);
-    border: 1px solid var(--border-accent);
+    border: 1px solid rgba(245, 197, 66, 0.16); /* Slightly more prominent gold border to match screenshot */
     border-radius: var(--radius-lg);
     padding: 40px 38px; /* Sleek balance with slightly reduced horizontal padding for perfect text breathing room */
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    box-shadow: var(--shadow-premium), var(--shadow-glow);
+    box-shadow: var(--shadow-premium), 0 0 35px rgba(245, 197, 66, 0.05); /* Soft ambient gold glow to match screenshot exactly */
     position: relative;
     overflow: hidden;
     transition: transform 0.8s var(--transition-smooth), border-color 0.4s var(--transition-fast), box-shadow 0.6s var(--transition-smooth);
@@ -640,7 +640,7 @@ a {
 .glass-card:hover {
     transform: translateY(-10px) scale(1.01);
     border-color: var(--accent);
-    box-shadow: var(--shadow-premium), 0 0 50px rgba(245, 197, 66, 0.08);
+    box-shadow: var(--shadow-premium), 0 0 55px rgba(245, 197, 66, 0.14); /* Enhanced premium hover glow */
 }
 
 .card-title {
@@ -2054,6 +2054,17 @@ a {
     .itr-grid-3, .itr-grid-4 {
         grid-template-columns: 1fr;
         gap: 32px;
+    }
+}
+
+/* --- DESKTOP ONLY EDITORIAL BR BREAKS TO MATCH SCREENSHOT --- */
+.desktop-br {
+    display: inline;
+}
+
+@media (max-width: 968px) {
+    .desktop-br {
+        display: none;
     }
 }
 
